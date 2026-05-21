@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Asisten Guru - Ekskul Komputer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons untuk Ikon yang lebih rapi -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <style>
+        /* Mencegah scroll horizontal dan efek bounce berlebih di iOS */
+        body {
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
+        /* Menyembunyikan scrollbar untuk area konten utama agar lebih rapi seperti aplikasi */
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+        /* Area konten utama memberikan ruang untuk bottom nav */
+        #main-content {
+            padding-bottom: 80px; /* Ruang untuk bottom nav */
+        }
+        /* Animasi Transisi Tab */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        /* Toast Notification */
+        #toast {
+            visibility: hidden;
+            min-width: 200px;
+            margin-left: -100px;
+            background-color: #10B981;
+            color: white;
+            text-align: center;
+            border-radius: 50px;
+            padding: 10px 16px;
+            position: fixed;
+            z-index: 50;
+            left: 50%;
+            bottom: 90px;
+            font-size: 14px;
+            font-weight: 500;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transform: translateY(20px);
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s, visibility 0.3s;
+        }
+        #toast.show {
+            visibility: visible;
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 font-sans h-screen flex flex-col overflow-hidden">
+
+    <!-- TOP APP BAR -->
+    <header class="bg-indigo-600 text-white shadow-md z-20 shrink-0">
+        <div class="px-4 py-3 flex items-center justify-between max-w-3xl mx-auto w-full">
+            <div class="flex items-center gap-3">
+                <div class="p-1.5 bg-white/20 rounded-lg">
+                    <i class="ph ph-monitor-play text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-lg font-bold leading-tight">Asisten Guru</h1>
+                    <p class="text-[10px] font-medium tracking-wider uppercase text-indigo-100">Ekskul Komputer</p>
+                </div>
+            </div>
+            <button onclick="resetData()" class="p-2 hover:bg-white/10 rounded-full transition" title="Reset Semua Data">
+                <i class="ph ph-arrow-counter-clockwise text-xl"></i>
+            </button>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT AREA (Scrollable) -->
+    <main id="main-content" class="flex-1 overflow-y-auto hide-scrollbar w-full max-w-3xl mx-auto px-4 py-6">
+        
+        <!-- ==================== TAB: DASHBOARD ==================== -->
+        <section id="tab-dashboard" class="tab-content active space-y-5">
+            <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 relative overflow-hidden">
+                <div class="absolute -top-10 -right-10 w-32 h-32 bg-indigo-50 rounded-full opacity-50"></div>
+                <h2 class="text-lg font-bold text-gray-800 mb-2">Ringkasan</h2>
+                <p class="text-sm text-gray-500 mb-4">Pantau aktivitas ekstrakurikuler Anda.</p>
+                
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <i class="ph ph-users text-blue-500 text-2xl mb-2 block"></i>
+                        <p class="text-xs text-blue-700 font-medium">Total Siswa</p>
+                        <p class="text-2xl font-bold text-gray-900" id="dash-total-siswa">0</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                        <i class="ph ph-book-open-text text-green-500 text-2xl mb-2 block"></i>
+                        <p class="text-xs text-green-700 font-medium">Jurnal Aktif</p>
+                        <p class="text-2xl font-bold text-gray-900" id="dash-total-jurnal">0</p>
+                    </div>
+                    <div class="bg-purple-50 p-4 rounded-xl border border-purple-100 col-span-2 flex items-center justify-between">
+                        <div>
+                            <p class="text-xs text-purple-700 font-medium">Tugas/Proyek</p>
+                            <p class="text-2xl font-bold text-gray-900" id="dash-total-tugas">0</p>
+                        </div>
+                        <i class="ph ph-graduation-cap text-purple-300 text-4xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl p-4 shadow-sm border border-gray-100 flex items-start gap-3">
+                <i class="ph-fill ph-info text-blue-500 text-xl shrink-0 mt-0.5"></i>
+                <p class="text-xs text-gray-600 leading-relaxed">
+                    Data Anda tersimpan secara otomatis di memori browser HP ini (Local Storage). Aplikasi ini siap digunakan secara offline.
+                </p>
+            </div>
+        </section>
+
+        <!-- ==================== TAB: SISWA ==================== -->
+        <section id="tab-siswa" class="tab-content space-y-5">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xl font-bold text-gray-800">Daftar Siswa</h2>
+                <button onclick="bukaModalSiswa()" class="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium active:bg-indigo-700">
+                    <i class="ph ph-plus"></i> Tambah
+                </button>
+            </div>
+
+            <!-- Form Tambah Siswa (Awalnya Sembunyi) -->
+            <div id="form-siswa" class="hidden bg-white p-4 rounded-xl shadow-sm border border-indigo-100 mb-4 animate-[fadeIn_0.2s]">
+                <h3 class="font-semibold text-gray-800 mb-3 text-sm">Siswa Baru</h3>
+                <div class="space-y-3">
+                    <input type="text" id="input-nama-siswa" placeholder="Nama Lengkap" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    <input type="text" id="input-kelas-siswa" placeholder="Kelas (Misal: X RPL 1)" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    <div class="flex gap-2">
+                        <button onclick="tutupModalSiswa()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm font-medium">Batal</button>
+                        <button onclick="simpanSiswa()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium">Simpan</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- List Siswa -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <ul id="list-siswa" class="divide-y divide-gray-100">
+                    <!-- Data siswa akan di-render di sini -->
+                </ul>
+            </div>
+        </section>
+
+        <!-- ==================== TAB: ABSENSI ==================== -->
+        <section id="tab-absensi" class="tab-content space-y-5">
+            <h2 class="text-xl font-bold text-gray-800">Presensi Harian</h2>
+            
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 flex items-center justify-between gap-3">
+                <label for="tanggal-absen" class="text-sm font-medium text-gray-600"><i class="ph ph-calendar-blank mr-1"></i> Tanggal</label>
+                <input type="date" id="tanggal-absen" class="bg-gray-50 border border-gray-200 rounded-lg px-3 py-1.5 text-sm outline-none focus:border-indigo-500" onchange="renderAbsensi()">
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <ul id="list-absensi" class="divide-y divide-gray-100">
+                    <!-- Data absensi di-render di sini -->
+                </ul>
+            </div>
+        </section>
+
+        <!-- ==================== TAB: NILAI ==================== -->
+        <section id="tab-nilai" class="tab-content space-y-5">
+            <h2 class="text-xl font-bold text-gray-800">Penilaian Praktik</h2>
+
+            <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 space-y-3">
+                <div class="flex justify-between items-center">
+                    <label class="text-sm font-medium text-gray-600">Pilih Tugas</label>
+                    <button onclick="toggleFormTugas()" class="text-indigo-600 text-sm font-medium flex items-center gap-1"><i class="ph ph-plus-circle"></i> Tugas Baru</button>
+                </div>
+                
+                <select id="select-tugas" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 text-sm outline-none focus:border-indigo-500" onchange="renderNilai()">
+                    <!-- Option tugas di-render di sini -->
+                </select>
+
+                <!-- Form Tambah Tugas -->
+                <div id="form-tugas" class="hidden flex gap-2 pt-2 border-t border-gray-100 animate-[fadeIn_0.2s]">
+                    <input type="text" id="input-nama-tugas" placeholder="Nama tugas..." class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500">
+                    <button onclick="simpanTugas()" class="bg-indigo-600 text-white px-4 rounded-lg text-sm font-medium">Buat</button>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+                <ul id="list-nilai" class="divide-y divide-gray-100">
+                    <!-- List input nilai di-render di sini -->
+                </ul>
+            </div>
+        </section>
+
+        <!-- ==================== TAB: JURNAL ==================== -->
+        <section id="tab-jurnal" class="tab-content space-y-5">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-xl font-bold text-gray-800">Buku Jurnal</h2>
+                <button onclick="bukaFormJurnal()" class="flex items-center gap-1 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium active:bg-indigo-700">
+                    <i class="ph ph-pencil-simple"></i> Tulis Baru
+                </button>
+            </div>
+
+            <!-- Form Jurnal -->
+            <div id="form-jurnal" class="hidden bg-white p-4 rounded-xl shadow-sm border border-indigo-100 mb-4 animate-[fadeIn_0.2s] space-y-3">
+                <input type="date" id="input-jurnal-tanggal" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none">
+                <input type="text" id="input-jurnal-topik" placeholder="Topik / Materi Hari ini" class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm font-medium outline-none focus:border-indigo-500">
+                <textarea id="input-jurnal-catatan" rows="3" placeholder="Catatan kegiatan kelas..." class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 resize-none"></textarea>
+                <textarea id="input-jurnal-kendala" rows="2" placeholder="Kendala & Solusi (opsional)..." class="w-full bg-gray-50 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-indigo-500 resize-none"></textarea>
+                <div class="flex gap-2 pt-2">
+                    <button onclick="tutupFormJurnal()" class="flex-1 bg-gray-100 text-gray-600 py-2 rounded-lg text-sm font-medium">Batal</button>
+                    <button onclick="simpanJurnal()" class="flex-1 bg-indigo-600 text-white py-2 rounded-lg text-sm font-medium">Simpan Jurnal</button>
+                </div>
+            </div>
+
+            <!-- List Jurnal -->
+            <div id="list-jurnal" class="space-y-4">
+                <!-- Data jurnal di-render di sini -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- BOTTOM NAVIGATION BAR -->
+    <nav class="bg-white border-t border-gray-200 fixed bottom-0 w-full z-20 pb-safe">
+        <div class="flex justify-around items-center max-w-3xl mx-auto px-2">
+            <button onclick="switchTab('dashboard')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-indigo-600 transition-colors" data-tab="dashboard">
+                <i class="ph-fill ph-squares-four text-2xl nav-icon"></i>
+                <span class="text-[10px] font-medium">Dashboard</span>
+            </button>
+            <button onclick="switchTab('siswa')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-indigo-500 transition-colors" data-tab="siswa">
+                <i class="ph ph-users text-2xl nav-icon"></i>
+                <span class="text-[10px] font-medium">Siswa</span>
+            </button>
+            <button onclick="switchTab('absensi')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-indigo-500 transition-colors" data-tab="absensi">
+                <i class="ph ph-calendar-check text-2xl nav-icon"></i>
+                <span class="text-[10px] font-medium">Absensi</span>
+            </button>
+            <button onclick="switchTab('nilai')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-indigo-500 transition-colors" data-tab="nilai">
+                <i class="ph ph-exam text-2xl nav-icon"></i>
+                <span class="text-[10px] font-medium">Nilai</span>
+            </button>
+            <button onclick="switchTab('jurnal')" class="nav-btn flex-1 py-3 flex flex-col items-center gap-1 text-gray-400 hover:text-indigo-500 transition-colors" data-tab="jurnal">
+                <i class="ph ph-notebook text-2xl nav-icon"></i>
+                <span class="text-[10px] font-medium">Jurnal</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Toast Notification Element -->
+    <div id="toast"><i class="ph-fill ph-check-circle mr-1 align-middle"></i> <span id="toast-msg">Tersimpan</span></div>
+
+    <!-- PADDING FOR SAFE AREA (iOS Notch dll) -->
+    <style>
+        @supports (padding-bottom: env(safe-area-inset-bottom)) {
+            .pb-safe { padding-bottom: env(safe-area-inset-bottom); }
+        }
+    </style>
+
+    <!-- LOGIKA APLIKASI (JAVASCRIPT) -->
+    <script>
+        // --- 1. SETUP STATE & LOCAL STORAGE ---
+        const getToday = () => new Date().toISOString().split('T')[0];
+        document.getElementById('tanggal-absen').value = getToday();
+        document.getElementById('input-jurnal-tanggal').value = getToday();
+
+        // Dummy Data Awal jika kosong
+        const defaultStudents = [
+            { id: 1, nama: 'Andi Saputra', kelas: 'X RPL 1' },
+            { id: 2, nama: 'Budi Raharjo', kelas: 'X RPL 1' },
+            { id: 3, nama: 'Citra Lestari', kelas: 'X RPL 2' }
+        ];
+
+        // State Aplikasi
+        let dataSiswa = JSON.parse(localStorage.getItem('appSiswa')) || defaultStudents;
+        let dataAbsensi = JSON.parse(localStorage.getItem('appAbsensi')) || {}; // Format: { "YYYY-MM-DD": { id_siswa: "Hadir" } }
+        let dataTugas = JSON.parse(localStorage.getItem('appTugas')) || ["Tugas 1 - Logika Dasar"];
+        let dataNilai = JSON.parse(localStorage.getItem('appNilai')) || {}; // Format: { "Nama Tugas": { id_siswa: 80 } }
+        let dataJurnal = JSON.parse(localStorage.getItem('appJurnal')) || [];
+
+        // Fungsi Simpan ke Storage
+        function saveData() {
+            localStorage.setItem('appSiswa', JSON.stringify(dataSiswa));
+            localStorage.setItem('appAbsensi', JSON.stringify(dataAbsensi));
+            localStorage.setItem('appTugas', JSON.stringify(dataTugas));
+            localStorage.setItem('appNilai', JSON.stringify(dataNilai));
+            localStorage.setItem('appJurnal', JSON.stringify(dataJurnal));
+            updateDashboard();
+        }
+
+        // --- 2. NAVIGASI TAB ---
+        function switchTab(tabId) {
+            // Sembunyikan semua tab
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            // Tampilkan tab yang dipilih
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+
+            // Update warna tombol navigasi
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                const icon = btn.querySelector('.nav-icon');
+                if (btn.dataset.tab === tabId) {
+                    btn.classList.replace('text-gray-400', 'text-indigo-600');
+                    btn.classList.remove('hover:text-indigo-500');
+                    // Ganti icon ke versi fill (solid)
+                    icon.classList.add('ph-fill');
+                    icon.classList.remove('ph');
+                } else {
+                    btn.classList.replace('text-indigo-600', 'text-gray-400');
+                    btn.classList.add('hover:text-indigo-500');
+                    // Ganti icon ke versi outline
+                    icon.classList.remove('ph-fill');
+                    icon.classList.add('ph');
+                }
+            });
+
+            // Scroll ke atas saat ganti tab
+            document.getElementById('main-content').scrollTo(0,0);
+
+            // Render ulang data spesifik tab jika perlu
+            if(tabId === 'siswa') renderSiswa();
+            if(tabId === 'absensi') renderAbsensi();
+            if(tabId === 'nilai') {
+                renderSelectTugas();
+                renderNilai();
+            }
+            if(tabId === 'jurnal') renderJurnal();
+        }
+
+        // --- 3. TOAST NOTIFICATION ---
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            document.getElementById('toast-msg').innerText = message;
+            toast.classList.add('show');
+            setTimeout(() => { toast.classList.remove('show'); }, 2000);
+        }
+
+        // --- 4. LOGIKA DASHBOARD ---
+        function updateDashboard() {
+            document.getElementById('dash-total-siswa').innerText = dataSiswa.length;
+            document.getElementById('dash-total-jurnal').innerText = dataJurnal.length;
+            document.getElementById('dash-total-tugas').innerText = dataTugas.length;
+        }
+
+        // --- 5. LOGIKA DATA SISWA ---
+        function bukaModalSiswa() {
+            document.getElementById('form-siswa').classList.remove('hidden');
+            document.getElementById('input-nama-siswa').focus();
+        }
+        function tutupModalSiswa() {
+            document.getElementById('form-siswa').classList.add('hidden');
+            document.getElementById('input-nama-siswa').value = '';
+            document.getElementById('input-kelas-siswa').value = '';
+        }
+        function simpanSiswa() {
+            const nama = document.getElementById('input-nama-siswa').value.trim();
+            const kelas = document.getElementById('input-kelas-siswa').value.trim();
+            if(!nama) return alert('Nama harus diisi!');
+
+            const newId = dataSiswa.length > 0 ? Math.max(...dataSiswa.map(s => s.id)) + 1 : 1;
+            dataSiswa.push({ id: newId, nama, kelas: kelas || '-' });
+            
+            saveData();
+            renderSiswa();
+            tutupModalSiswa();
+            showToast('Siswa ditambahkan');
+        }
+        function hapusSiswa(id) {
+            if(confirm('Yakin ingin menghapus siswa ini?')) {
+                dataSiswa = dataSiswa.filter(s => s.id !== id);
+                saveData();
+                renderSiswa();
+                showToast('Data dihapus');
+            }
+        }
+        function renderSiswa() {
+            const list = document.getElementById('list-siswa');
+            if(dataSiswa.length === 0) {
+                list.innerHTML = '<li class="p-6 text-center text-gray-400 text-sm">Belum ada data siswa.</li>';
+                return;
+            }
+            
+            list.innerHTML = dataSiswa.map((siswa, index) => `
+                <li class="p-4 flex justify-between items-center bg-white hover:bg-gray-50 transition">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-indigo-100 text-indigo-600 flex items-center justify-center font-bold text-xs shrink-0">${index + 1}</div>
+                        <div>
+                            <p class="font-medium text-gray-800 text-sm">${siswa.nama}</p>
+                            <p class="text-xs text-gray-500">${siswa.kelas}</p>
+                        </div>
+                    </div>
+                    <button onclick="hapusSiswa(${siswa.id})" class="text-red-400 hover:text-red-600 p-2"><i class="ph ph-trash"></i></button>
+                </li>
+            `).join('');
+        }
+
+        // --- 6. LOGIKA ABSENSI ---
+        function ubahAbsen(idSiswa, status) {
+            const tgl = document.getElementById('tanggal-absen').value;
+            if(!dataAbsensi[tgl]) dataAbsensi[tgl] = {};
+            
+            dataAbsensi[tgl][idSiswa] = status;
+            saveData();
+            renderAbsensi(); // Re-render untuk update UI tombol
+        }
+        function renderAbsensi() {
+            const tgl = document.getElementById('tanggal-absen').value;
+            const list = document.getElementById('list-absensi');
+            const currentAbsensi = dataAbsensi[tgl] || {};
+
+            if(dataSiswa.length === 0) {
+                list.innerHTML = '<li class="p-6 text-center text-gray-400 text-sm">Tambahkan siswa terlebih dahulu di menu Siswa.</li>';
+                return;
+            }
+
+            list.innerHTML = dataSiswa.map((siswa, index) => {
+                const status = currentAbsensi[siswa.id] || 'Alpa'; // Default Alpa
+                
+                const btnStyle = (opt) => {
+                    if (status !== opt) return 'bg-gray-100 text-gray-500 border-transparent';
+                    if (opt === 'Hadir') return 'bg-green-100 text-green-700 border-green-200';
+                    if (opt === 'Izin') return 'bg-blue-100 text-blue-700 border-blue-200';
+                    if (opt === 'Sakit') return 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                    return 'bg-red-100 text-red-700 border-red-200';
+                };
+
+                return `
+                <li class="p-4 bg-white">
+                    <p class="font-medium text-gray-800 text-sm mb-2">${index+1}. ${siswa.nama} <span class="text-xs text-gray-400 font-normal ml-1">(${siswa.kelas})</span></p>
+                    <div class="flex gap-2">
+                        ${['Hadir', 'Izin', 'Sakit', 'Alpa'].map(opt => `
+                            <button onclick="ubahAbsen(${siswa.id}, '${opt}')" 
+                                class="flex-1 py-1.5 rounded-md text-[11px] font-medium border ${btnStyle(opt)} transition-colors">
+                                ${opt}
+                            </button>
+                        `).join('')}
+                    </div>
+                </li>
+                `;
+            }).join('');
+        }
+
+        // --- 7. LOGIKA PENILAIAN ---
+        function toggleFormTugas() {
+            const form = document.getElementById('form-tugas');
+            form.classList.toggle('hidden');
+        }
+        function simpanTugas() {
+            const nama = document.getElementById('input-nama-tugas').value.trim();
+            if(!nama) return;
+            if(!dataTugas.includes(nama)) {
+                dataTugas.push(nama);
+                saveData();
+                renderSelectTugas();
+                document.getElementById('select-tugas').value = nama; // auto select
+                renderNilai();
+            }
+            document.getElementById('input-nama-tugas').value = '';
+            toggleFormTugas();
+            showToast('Tugas ditambahkan');
+        }
+        function renderSelectTugas() {
+            const select = document.getElementById('select-tugas');
+            if(dataTugas.length === 0) {
+                select.innerHTML = '<option value="">Belum ada tugas dibuat</option>';
+                select.disabled = true;
+                return;
+            }
+            select.disabled = false;
+            // Simpan value saat ini agar tidak keriset saat render ulang
+            const currentVal = select.value;
+            select.innerHTML = dataTugas.map(t => `<option value="${t}">${t}</option>`).join('');
+            if(currentVal && dataTugas.includes(currentVal)) {
+                select.value = currentVal;
+            }
+        }
+        function inputNilai(idSiswa, nilai) {
+            const tugas = document.getElementById('select-tugas').value;
+            if(!tugas) return;
+            if(!dataNilai[tugas]) dataNilai[tugas] = {};
+            
+            // Batasi nilai 0-100
+            let numNilai = parseInt(nilai) || 0;
+            if(numNilai > 100) numNilai = 100;
+            if(numNilai < 0) numNilai = 0;
+            
+            dataNilai[tugas][idSiswa] = numNilai;
+            saveData();
+            showToast('Nilai tersimpan');
+        }
+        function renderNilai() {
+            const list = document.getElementById('list-nilai');
+            const tugas = document.getElementById('select-tugas').value;
+
+            if(dataSiswa.length === 0) {
+                list.innerHTML = '<li class="p-6 text-center text-gray-400 text-sm">Tambahkan siswa terlebih dahulu.</li>';
+                return;
+            }
+            if(!tugas) {
+                list.innerHTML = '<li class="p-6 text-center text-gray-400 text-sm">Buat tugas/proyek terlebih dahulu.</li>';
+                return;
+            }
+
+            const currentNilai = dataNilai[tugas] || {};
+
+            list.innerHTML = dataSiswa.map((siswa, index) => {
+                const nilai = currentNilai[siswa.id] !== undefined ? currentNilai[siswa.id] : '';
+                return `
+                <li class="p-4 flex items-center justify-between bg-white">
+                    <div>
+                        <p class="font-medium text-gray-800 text-sm">${index+1}. ${siswa.nama}</p>
+                        <p class="text-xs text-gray-400">${siswa.kelas}</p>
+                    </div>
+                    <div class="w-20">
+                        <input type="number" min="0" max="100" value="${nilai}" placeholder="-" 
+                            onblur="inputNilai(${siswa.id}, this.value)"
+                            onchange="inputNilai(${siswa.id}, this.value)"
+                            class="w-full bg-gray-50 border border-gray-200 rounded-md py-1.5 px-2 text-center font-semibold text-indigo-700 outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                </li>
+                `;
+            }).join('');
+        }
+
+        // --- 8. LOGIKA JURNAL ---
+        function bukaFormJurnal() {
+            document.getElementById('form-jurnal').classList.remove('hidden');
+        }
+        function tutupFormJurnal() {
+            document.getElementById('form-jurnal').classList.add('hidden');
+            document.getElementById('input-jurnal-topik').value = '';
+            document.getElementById('input-jurnal-catatan').value = '';
+            document.getElementById('input-jurnal-kendala').value = '';
+        }
+        function simpanJurnal() {
+            const date = document.getElementById('input-jurnal-tanggal').value;
+            const topic = document.getElementById('input-jurnal-topik').value.trim();
+            const notes = document.getElementById('input-jurnal-catatan').value.trim();
+            const solution = document.getElementById('input-jurnal-kendala').value.trim();
+
+            if(!topic) return alert('Topik materi wajib diisi!');
+
+            const newJurnal = {
+                id: Date.now(),
+                date,
+                topic,
+                notes,
+                solution
+            };
+
+            // Tambah di awal (terbaru di atas)
+            dataJurnal.unshift(newJurnal);
+            saveData();
+            renderJurnal();
+            tutupFormJurnal();
+            showToast('Jurnal disimpan');
+        }
+        function hapusJurnal(id) {
+            if(confirm('Yakin hapus catatan jurnal ini?')) {
+                dataJurnal = dataJurnal.filter(j => j.id !== id);
+                saveData();
+                renderJurnal();
+                showToast('Jurnal dihapus');
+            }
+        }
+        function renderJurnal() {
+            const container = document.getElementById('list-jurnal');
+            if(dataJurnal.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-gray-400 text-sm bg-white rounded-xl border border-gray-100 border-dashed">Belum ada catatan jurnal.</div>';
+                return;
+            }
+
+            container.innerHTML = dataJurnal.map(j => {
+                // Format tanggal ID
+                const tglFormat = new Date(j.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                
+                return `
+                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative group">
+                    <button onclick="hapusJurnal(${j.id})" class="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition">
+                        <i class="ph-fill ph-trash"></i>
+                    </button>
+                    <div class="flex items-center gap-1.5 text-xs font-semibold text-indigo-600 mb-2">
+                        <i class="ph ph-calendar-blank"></i> ${tglFormat}
+                    </div>
+                    <h3 class="font-bold text-gray-800 text-lg mb-3 leading-tight pr-6">${j.topic}</h3>
+                    
+                    <div class="space-y-2">
+                        <div class="bg-gray-50 p-3 rounded-lg border border-gray-100">
+                            <p class="text-[10px] uppercase font-bold text-gray-500 mb-1 flex items-center gap-1"><i class="ph ph-text-align-left"></i> Catatan</p>
+                            <p class="text-sm text-gray-700 leading-relaxed">${j.notes || '-'}</p>
+                        </div>
+                        ${j.solution ? `
+                        <div class="bg-orange-50/50 p-3 rounded-lg border border-orange-100">
+                            <p class="text-[10px] uppercase font-bold text-orange-600 mb-1 flex items-center gap-1"><i class="ph ph-warning-circle"></i> Kendala & Solusi</p>
+                            <p class="text-sm text-gray-700 leading-relaxed">${j.solution}</p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                `;
+            }).join('');
+        }
+
+        // --- RESET DATA (Untuk debugging/bersih-bersih) ---
+        function resetData() {
+            if(confirm('PERINGATAN: Semua data siswa, absen, nilai, dan jurnal akan Dihapus secara permanen dari HP ini. Lanjutkan?')) {
+                localStorage.clear();
+                location.reload(); // Muat ulang halaman untuk inisialisasi ulang
+            }
+        }
+
+        // --- INISIALISASI AWAL SAAT HALAMAN DIMUAT ---
+        updateDashboard();
+        renderSiswa(); // Render list siswa tersembunyi
+        renderSelectTugas(); 
+    </script>
+</body>
+</html>
