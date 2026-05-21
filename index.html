@@ -673,7 +673,10 @@
             if(!topic) return alert('Topik materi wajib diisi!');
 
             const newJurnal = { id: Date.now(), date, topic, notes, solution };
-            dataJurnal.unshift(newJurnal);
+            
+            // Masukkan data baru
+            dataJurnal.push(newJurnal);
+            
             saveData();
             renderJurnal();
             tutupFormJurnal();
@@ -694,7 +697,12 @@
                 return;
             }
 
-            container.innerHTML = dataJurnal.map(j => {
+            // PENGURUTAN: Terbaru ke Terlama (Descending berdasarkan 'date')
+            const sortedJurnal = [...dataJurnal].sort((a, b) => {
+                return new Date(b.date) - new Date(a.date);
+            });
+
+            container.innerHTML = sortedJurnal.map(j => {
                 const tglFormat = new Date(j.date).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
                 return `
                 <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-100 relative group">
